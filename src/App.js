@@ -17,10 +17,107 @@ import config from './config.json';
 function App() {
   const [provider, setProvider] = useState(null)
   const [account, setAccount] = useState(null)
+  const [nft, setNFT] = useState(null)
+
+
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [image, setImage] = useState(null)
+  const [url, setURL] = useState(null)
+
+  const [message, setMessage] = useState("")
+  const [isWaiting, setIsWaiting] = useState(false)
 
   const loadBlockchainData = async () => {
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     setProvider(provider)
+
+    const network = await provider.getNetwork()
+    
+    const nft = new ethers.Contract(config[network.chainId].nft.address, NFT, provider)
+    setNFT(nft)
+
+    // const name = await nft.name()
+    // console.log("name", name)
+  }
+
+ 
+
+  const submitHandler = async(e)=>{
+    e.preventDefault()    // stops the page from refreshing automatically
+    
+    if(name==="" || description===""){
+      window.alert("Please provide a name and description")
+      return
+    }
+    setIsWaiting(true)
+    const imageData =  createImage()
+
+    const url = await uploadImage(imageData)
+    // console.log("url", url)
+    await mintImage(url)
+
+    setIsWaiting(false)
+    setMessage("")
+    //console.log("Success!")
+  }
+
+  const createImage = async()=>{
+    setMessage("Generating Image...")
+
+    const URL = 'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2'
+
+    const response = await axios({
+      url: URL,
+      method: "POST",
+      headers: ({
+        Authorization: "Bearer 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",
+        Accept: 'application/json',
+        'Content-type': 'application/json',
+      }),
+      data: JSON.stringify({
+        inputs: description, options: {wait_for_model: true},
+      }),
+      responseType: 'arraybuffer',
+    })
+    const type = response.headers['content-type']
+    const data = response.data
+
+    const base64data = Buffer.from(data).toString('base64')
+    const img = 'data:${type};base64,' + base64data
+    setImage(img)
+
+     return data
+  }
+  const uploadImage = async(imageData)  => {
+    setMessage("Uploading Image...")
+
+    const nftstorage = new NFTStorage({token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweERjNmE1ZjhhNkM1OGRiQTJkNTczODhiZjE5YUQxQzIxZkZCNWQ1OUIiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY5MjA3MjM0NTkyOSwibmFtZSI6IkFJX05GVF9TdG9yYWdlIn0.L2KELM5C1waTZjeSoaZ_bsCvjV5dvqO_F_FRr10-3nI"})
+    
+    // const {ipnft} = await nftstorage.store({
+    //   image: new File([imageData], "image.jpeg", {type: "image/jpeg"}),
+    //   name: name,
+    //   description: description,
+    // })
+    const {ipnft} = await nftstorage.store({
+      image: new File([imageData], "image.jpeg", {type: "image/jpeg"}),
+      name: name,
+      description: description,
+    })
+    // const url = 'https://ipfs.io./ipfs/{ipnft}'
+    // const url = 'https://ipfs.io./ipfs/${ipnft}/metadata.json'
+    const url = "https://ipfs.io/ipfs/bafyreid4an6ng6e6hok56l565eivozra3373bo6funw3p5mhq5oonew6u4/metadata.json"
+    setURL(url)
+    
+    return url
+  }
+
+  const mintImage = async (tokenURI) => {
+    setMessage("Waiting for Mint...")
+
+    const signer = await provider.getSigner()
+    const transaction = await nft.connect(signer).mint(tokenURI, {value: ethers.utils.parseUnits("1", "ether")})
+    await transaction.wait()
   }
 
   useEffect(() => {
@@ -31,18 +128,27 @@ function App() {
     <div>
       <Navigation account={account} setAccount={setAccount} />
       <div className="form">
-        <form>
-          <input type = "text" placeholder="Create a name..."></input>
-          <input type = "text" placeholder="Create a description..."></input>
+        <form onSubmit={submitHandler}>
+          <input type = "text" placeholder="Create a name..." onChange={(e)=>{setName(e.target.value)}}></input>
+          <input type = "text" placeholder="Create a description..." onChange={(e)=>{setDescription(e.target.value)}}></input>
           <input type = "submit" value="Create & Mint"></input>
         </form>
         <div className="image">
-        <img src="" alt="AI generated Image"></img>
+        {!isWaiting && image ? (
+            <img src={image} alt="AI generated image" />
+          ) : isWaiting ? (
+            <div className="image__placeholder">
+              <Spinner animation="border" />
+              <p>{message}</p>
+            </div>
+          ) : (
+            <></>
+          )}
         </div>
-      </div>
-      <p>View&nbsp;<a href="">MetaData</a></p>
-
+      
     </div>
+      
+    </div>   
   );
 }
 
