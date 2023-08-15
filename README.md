@@ -1,13 +1,13 @@
 # AI NFT Minting Application
 
 ## Tech Stack & Tools
-- Solidity (Writing Smart Contracts & Tests)
-- Javascript (React & Testing)
+- Solidity (Smart Contracts & Tests)
+- Javascript
 - [Hardhat](https://hardhat.org/) (Development Framework)
 - [Ethers.js](https://docs.ethers.io/v5/) (Blockchain Interaction)
-- [React.js](https://reactjs.org/) (Frontend Framework)
+- [React.js](https://reactjs.org/) (Frontend)
 - [NFT.Storage](https://nft.storage/) (Connection to IPFS)
-- [Hugging Face](https://huggingface.co/) (AI Models)
+- [Hugging Face](https://huggingface.co/) (AI Models for Image Generation)
 
 ## Requirements For Initial Setup
 - Install [NodeJS](https://nodejs.org/en/)
